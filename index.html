@@ -3201,84 +3201,91 @@
             }
             
             function sendMessage(e) {
-                e.preventDefault();
-                
-                if (!currentUser) return;
-                
-                const recipientEmailValue = recipientEmail.value.trim();
-                const recipientNameValue = recipientName.value.trim();
-                const subjectValue = messageSubject.value.trim();
-                const contentValue = messageContent.value.trim();
-                
-                // Validate inputs
-                if (!recipientEmailValue || !recipientNameValue || !subjectValue || !contentValue) {
-                    showAlert('Please fill in all fields', 'error');
-                    return;
-                }
-                
-                // Prevent users from sending messages to themselves
-                if (recipientEmailValue === currentUser.email) {
-                    showAlert('You cannot send messages to yourself', 'error');
-                    return;
-                }
-                
-                // Check if recipient exists
-                const users = JSON.parse(localStorage.getItem('hexamailUsers')) || [];
-                const recipientExists = users.some(user => user.email === recipientEmailValue);
-                
-                if (!recipientExists) {
-                    showAlert('No user found with this email. Please check the email and try again.', 'error');
-                    return;
-                }
-                
-                // Create message object
-                const message = {
-                    senderEmail: currentUser.email,
-                    senderName: currentUser.name,
-                    recipientEmail: recipientEmailValue,
-                    recipientName: recipientNameValue,
-                    subject: subjectValue,
-                    content: contentValue,
-                    timestamp: new Date().toISOString(),
-                    read: false
-                };
-                
-                // Save message to recipient's storage
-                const recipientMessagesKey = `hexamailMessages_${recipientEmailValue}`;
-                let recipientMessages = JSON.parse(localStorage.getItem(recipientMessagesKey)) || [];
-                recipientMessages.push(message);
-                localStorage.setItem(recipientMessagesKey, JSON.stringify(recipientMessages));
-                
-                // Add to current user's sent messages
-                const sentMessagesKey = `hexamailSentMessages_${currentUser.email}`;
-                let userSentMessages = JSON.parse(localStorage.getItem(sentMessagesKey)) || [];
-                userSentMessages.push(message);
-                localStorage.setItem(sentMessagesKey, JSON.stringify(userSentMessages));
-                
-                // Update sent messages data
-                sentMessagesData = userSentMessages;
-                document.getElementById('sent-count').textContent = sentMessagesData.length;
-                document.getElementById('mobile-sent-count').textContent = sentMessagesData.length;
-                
-                // Show confirmation
-                sendConfirmation.innerHTML = `
-                    <i class="fas fa-check-circle"></i> Message sent to ${recipientNameValue} (${recipientEmailValue})
-                `;
-                sendConfirmation.classList.remove('hidden');
-                
-                // Clear form
-                composeForm.reset();
-                
-                // Scroll to confirmation
-                setTimeout(() => {
-                    sendConfirmation.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-                
-                // Update sent messages if on that tab
-                if (!sentTab.classList.contains('hidden')) {
-                    loadSentMessages();
-                }
-            }
+    e.preventDefault();
+    
+    if (!currentUser) return;
+    
+    const recipientEmailValue = recipientEmail.value.trim();
+    const recipientNameValue = recipientName.value.trim();
+    const subjectValue = messageSubject.value.trim();
+    const contentValue = messageContent.value.trim();
+    
+    // Validate inputs
+    if (!recipientEmailValue || !subjectValue || !contentValue) {
+        showAlert('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    // If recipient name is not provided, extract from email or use email as name
+    const finalRecipientName = recipientNameValue || recipientEmailValue.split('@')[0];
+    
+    // Prevent users from sending messages to themselves
+    if (recipientEmailValue === currentUser.email) {
+        showAlert('You cannot send messages to yourself', 'error');
+        return;
+    }
+    
+    // Create message object
+    const message = {
+        senderEmail: currentUser.email,
+        senderName: currentUser.name,
+        recipientEmail: recipientEmailValue,
+        recipientName: finalRecipientName,
+        subject: subjectValue,
+        content: contentValue,
+        timestamp: new Date().toISOString(),
+        read: false
+    };
+    
+    // Check if recipient is a Hexa Mail user
+    const users = JSON.parse(localStorage.getItem('hexamailUsers')) || [];
+    const recipientExists = users.some(user => user.email === recipientEmailValue);
+    
+    if (recipientExists) {
+        // Save message to recipient's storage
+        const recipientMessagesKey = `hexamailMessages_${recipientEmailValue}`;
+        let recipientMessages = JSON.parse(localStorage.getItem(recipientMessagesKey)) || [];
+        recipientMessages.push(message);
+        localStorage.setItem(recipientMessagesKey, JSON.stringify(recipientMessages));
+    } else {
+        // For external emails, store in a separate "sent external" storage
+        // In a real app, this would trigger an actual email sending process
+        showAlert(`Message sent to ${finalRecipientName} (${recipientEmailValue})`, 'success');
+    }
+    
+    // Add to current user's sent messages
+    const sentMessagesKey = `hexamailSentMessages_${currentUser.email}`;
+    let userSentMessages = JSON.parse(localStorage.getItem(sentMessagesKey)) || [];
+    userSentMessages.push(message);
+    localStorage.setItem(sentMessagesKey, JSON.stringify(userSentMessages));
+    
+    // Update sent messages data
+    sentMessagesData = userSentMessages;
+    document.getElementById('sent-count').textContent = sentMessagesData.length;
+    document.getElementById('mobile-sent-count').textContent = sentMessagesData.length;
+    
+    // Show confirmation
+    sendConfirmation.innerHTML = `
+        <i class="fas fa-check-circle"></i> Message sent to ${finalRecipientName} (${recipientEmailValue})
+    `;
+    sendConfirmation.classList.remove('hidden');
+    
+    // Clear form
+    composeForm.reset();
+    
+    // Scroll to confirmation
+    setTimeout(() => {
+        sendConfirmation.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    
+    // Update sent messages if on that tab
+    if (!sentTab.classList.contains('hidden')) {
+        loadSentMessages();
+    }
+}
+
+// Modify the compose form to make recipient name optional
+document.addEventListener('DOMContentLoaded', function() {
             
             function startMessageChecking() {
                 // Check for new messages every 3 seconds
@@ -4283,171 +4290,5 @@
         });
         
     </script>
-    <script>
-// ... existing code ...
-
-function sendMessage(e) {
-    e.preventDefault();
-    
-    if (!currentUser) return;
-    
-    const recipientEmailValue = recipientEmail.value.trim();
-    const recipientNameValue = recipientName.value.trim();
-    const subjectValue = messageSubject.value.trim();
-    const contentValue = messageContent.value.trim();
-    
-    // Validate inputs
-    if (!recipientEmailValue || !subjectValue || !contentValue) {
-        showAlert('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    // If recipient name is not provided, extract from email or use email as name
-    const finalRecipientName = recipientNameValue || recipientEmailValue.split('@')[0];
-    
-    // Prevent users from sending messages to themselves
-    if (recipientEmailValue === currentUser.email) {
-        showAlert('You cannot send messages to yourself', 'error');
-        return;
-    }
-    
-    // Create message object
-    const message = {
-        senderEmail: currentUser.email,
-        senderName: currentUser.name,
-        recipientEmail: recipientEmailValue,
-        recipientName: finalRecipientName,
-        subject: subjectValue,
-        content: contentValue,
-        timestamp: new Date().toISOString(),
-        read: false
-    };
-    
-    // Check if recipient is a Hexa Mail user
-    const users = JSON.parse(localStorage.getItem('hexamailUsers')) || [];
-    const recipientExists = users.some(user => user.email === recipientEmailValue);
-    
-    if (recipientExists) {
-        // Save message to recipient's storage
-        const recipientMessagesKey = `hexamailMessages_${recipientEmailValue}`;
-        let recipientMessages = JSON.parse(localStorage.getItem(recipientMessagesKey)) || [];
-        recipientMessages.push(message);
-        localStorage.setItem(recipientMessagesKey, JSON.stringify(recipientMessages));
-    } else {
-        // For external emails, store in a separate "sent external" storage
-        // In a real app, this would trigger an actual email sending process
-        showAlert(`Message sent to ${finalRecipientName} (${recipientEmailValue})`, 'success');
-    }
-    
-    // Add to current user's sent messages
-    const sentMessagesKey = `hexamailSentMessages_${currentUser.email}`;
-    let userSentMessages = JSON.parse(localStorage.getItem(sentMessagesKey)) || [];
-    userSentMessages.push(message);
-    localStorage.setItem(sentMessagesKey, JSON.stringify(userSentMessages));
-    
-    // Update sent messages data
-    sentMessagesData = userSentMessages;
-    document.getElementById('sent-count').textContent = sentMessagesData.length;
-    document.getElementById('mobile-sent-count').textContent = sentMessagesData.length;
-    
-    // Show confirmation
-    sendConfirmation.innerHTML = `
-        <i class="fas fa-check-circle"></i> Message sent to ${finalRecipientName} (${recipientEmailValue})
-    `;
-    sendConfirmation.classList.remove('hidden');
-    
-    // Clear form
-    composeForm.reset();
-    
-    // Scroll to confirmation
-    setTimeout(() => {
-        sendConfirmation.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-    
-    // Update sent messages if on that tab
-    if (!sentTab.classList.contains('hidden')) {
-        loadSentMessages();
-    }
-}
-
-// Modify the compose form to make recipient name optional
-document.addEventListener('DOMContentLoaded', function() {
-    // ... existing code ...
-    
-    // Update the compose form to make recipient name optional
-    const recipientNameField = document.getElementById('recipient-name');
-    if (recipientNameField) {
-        recipientNameField.required = false;
-        recipientNameField.placeholder = "Recipient name (optional)";
-        
-        // Add event listener to auto-fill name from email if possible
-        recipientEmail.addEventListener('blur', function() {
-            if (!recipientName.value.trim() && recipientEmail.value.trim()) {
-                // Try to extract name from email (before @)
-                const emailParts = recipientEmail.value.trim().split('@');
-                if (emailParts.length > 0 && emailParts[0]) {
-                    // Format the name (capitalize first letter)
-                    const nameFromEmail = emailParts[0]
-                        .replace(/[^a-zA-Z0-9]/g, ' ')
-                        .replace(/\b\w/g, l => l.toUpperCase())
-                        .trim();
-                    
-                    if (nameFromEmail) {
-                        recipientName.value = nameFromEmail;
-                    }
-                }
-            }
-        });
-    }
-    
-    // ... existing code ...
-});
-
-// Simulate receiving emails from external sources
-// In a real app, this would be handled by a server-side process
-function simulateExternalEmail(senderEmail, senderName, recipientEmail, subject, content) {
-    const message = {
-        senderEmail: senderEmail,
-        senderName: senderName,
-        recipientEmail: recipientEmail,
-        recipientName: "", // Will be filled by the recipient's name if they exist
-        subject: subject,
-        content: content,
-        timestamp: new Date().toISOString(),
-        read: false,
-        external: true // Flag to indicate this came from external source
-    };
-    
-    // Check if recipient exists in our system
-    const users = JSON.parse(localStorage.getItem('hexamailUsers')) || [];
-    const recipient = users.find(user => user.email === recipientEmail);
-    
-    if (recipient) {
-        // Update recipient name if we have it
-        message.recipientName = recipient.name;
-        
-        // Save message to recipient's storage
-        const recipientMessagesKey = `hexamailMessages_${recipientEmail}`;
-        let recipientMessages = JSON.parse(localStorage.getItem(recipientMessagesKey)) || [];
-        recipientMessages.push(message);
-        localStorage.setItem(recipientMessagesKey, JSON.stringify(recipientMessages));
-        
-        return true;
-    }
-    
-    return false; // Recipient doesn't exist in our system
-}
-
-// Example of how to simulate an external email (for testing)
-// simulateExternalEmail(
-//     "ahrar.0933@gmail.com", 
-//     "Ahrar Khan", 
-//     "user123@hexamail.com", 
-//     "Test External Email", 
-//     "This is a test email from an external Gmail account."
-// );
-
-// ... rest of the existing code ...
-</script>
 </body>
 </html>
