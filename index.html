@@ -4290,6 +4290,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
     </script>
-            recipientNameField
+      const recipientNameField = document.getElementById('recipient-name');
+    if (recipientNameField) {
+        recipientNameField.required = false;
+        recipientNameField.placeholder = "Recipient name (optional)";
 </body>
 </html>
